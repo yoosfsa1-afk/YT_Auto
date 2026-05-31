@@ -2,8 +2,8 @@ name: YouTube Smart Shorts Automator (Node.js)
 
 on:
   schedule:
-    - cron: '0 0 * * 0' # يعمل مرة أسبوعياً
-  workflow_dispatch: # زر التشغيل اليدوي
+    - cron: '0 0 * * 0' 
+  workflow_dispatch: # لتشغيله يدوياً بضغطة زر
 
 jobs:
   process_video:
@@ -27,6 +27,9 @@ jobs:
 
       - name: Install Node.js Dependencies
         run: npm install googleapis
+
+      - name: Create Cookies File
+        run: echo "${{ secrets.YT_COOKIES }}" > cookies.txt
 
       - name: Run Magic Script
         env:
