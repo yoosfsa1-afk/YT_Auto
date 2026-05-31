@@ -2,31 +2,38 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 const { google } = require('googleapis');
 
-// --- بيانات الاعتماد الخاصة بك للتجربة المحلية فقط ---
+// =========================================================================
+// ⚠️ تنبيه أمني: هذه البيانات حساسة جداً، لا ترفع هذا الملف أبداً إلى GitHub 
+// وهو يحتوي على هذه المفاتيح بشكل مكشوف! استخدمه فقط للتجربة المحلية.
+// =========================================================================
 const CLIENT_ID = "935417401055-h22umchi7s49c841hju6mmemfhrod8mv.apps.googleusercontent.com";
 const CLIENT_SECRET = "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";
 const REFRESH_TOKEN = "1//04kKfGNhamyCoCgYIARAAGAQSNwF-L9Irqy1p44YDlLHTCSqp1n6Gyg4CBr_Stqw_RkjyFYfglwayNrkocAzQjr4BNCl2CjGIyXI";
 const CHANNEL_URL = "https://www.youtube.com/@MohamedAbuAlAsateer"; 
+
+// الكوكيز للتغلب على حظر البوتات (اختر متصفحك: chrome, edge, firefox, brave)
+// 💡 تأكد من إغلاق المتصفح تماماً قبل تشغيل السكربت لكي ينجح سحب الكوكيز
+const BROWSER = "chrome"; 
 
 // إعداد مصادقة يوتيوب API
 const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, "https://developers.google.com/oauthplayground");
 oauth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
 const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
 
-// 2. دالة جلب العنوان وتحميل أحدث فيديو
+// 2. دالة جلب العنوان وتحميل أحدث فيديو باستخدام الكوكيز لتفادي الحجب
 function downloadLatestVideo() {
-    console.log("جاري استخراج عنوان أحدث فيديو من قناتك...");
+    console.log("جاري استخراج عنوان أحدث فيديو من قناتك باستخدام كوكيز المتصفح...");
     
     let title = "فيديو جديد";
     try {
-        // استخراج العنوان الأصلي للفيديو
-        const titleCmd = `yt-dlp --print "%(title)s" --playlist-items 1 "${CHANNEL_URL}"`;
+        // استخراج العنوان الأصلي للفيديو مع تمرير الكوكيز
+        const titleCmd = `yt-dlp --cookies-from-browser ${BROWSER} --print "%(title)s" --playlist-items 1 "${CHANNEL_URL}"`;
         title = execSync(titleCmd, { encoding: 'utf-8' }).trim();
         console.log(`العنوان الأصلي المكتشف: ${title}`);
         
-        console.log("جاري تحميل الفيديو (قد يستغرق ذلك بعض الوقت حسب الحجم)...");
-        // تحميل الفيديو بأفضل جودة بصيغة mp4
-        const downloadCmd = `yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4" -o "latest_video.mp4" --playlist-items 1 "${CHANNEL_URL}"`;
+        console.log("جاري تحميل الفيديو (باستخدام صلاحيات المتصفح لتجنب الحجب)...");
+        // تحميل الفيديو مع تمرير الكوكيز
+        const downloadCmd = `yt-dlp --cookies-from-browser ${BROWSER} -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4" -o "latest_video.mp4" --playlist-items 1 "${CHANNEL_URL}"`;
         execSync(downloadCmd, { stdio: 'inherit' });
         
         return { file: "latest_video.mp4", title: title };
@@ -36,7 +43,7 @@ function downloadLatestVideo() {
     }
 }
 
-// 3. دالة القص (دقيقة واحدة بأبعاد عمودية للهواتف)
+// 3. دالة القص بواسطة FFmpeg (أول 59 ثانية عمودياً)
 function processVideoToShorts(inputFile) {
     console.log("جاري تحويل أول دقيقة من الفيديو إلى مقطع ريلز (9:16)...");
     const outputFile = "short_1.mp4";
@@ -53,7 +60,7 @@ function processVideoToShorts(inputFile) {
     }
 }
 
-// 4. دالة الرفع والجدولة لليوم التالي
+// 4. دالة الرفع والجدولة لليوم التالي الساعة 3 عصراً بتوقيت جرينتش
 async function uploadAndSchedule(filePath, originalTitle) {
     console.log("جاري رفع مقطع الريلز إلى يوتيوب وجدولته...");
     
