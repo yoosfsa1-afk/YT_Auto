@@ -3,16 +3,14 @@ const { execSync } = require('child_process');
 const { google } = require('googleapis');
 
 // =========================================================================
-// ⚠️ تنبيه أمني: هذه البيانات حساسة جداً، لا ترفع هذا الملف أبداً إلى GitHub 
-// وهو يحتوي على هذه المفاتيح بشكل مكشوف! استخدمه فقط للتجربة المحلية.
+// البيانات الخاصة بك للتجربة الحالية
 // =========================================================================
 const CLIENT_ID = "935417401055-h22umchi7s49c841hju6mmemfhrod8mv.apps.googleusercontent.com";
 const CLIENT_SECRET = "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";
 const REFRESH_TOKEN = "1//04kKfGNhamyCoCgYIARAAGAQSNwF-L9Irqy1p44YDlLHTCSqp1n6Gyg4CBr_Stqw_RkjyFYfglwayNrkocAzQjr4BNCl2CjGIyXI";
 const CHANNEL_URL = "https://www.youtube.com/@MohamedAbuAlAsateer"; 
 
-// الكوكيز للتغلب على حظر البوتات (اختر متصفحك: chrome, edge, firefox, brave)
-// 💡 تأكد من إغلاق المتصفح تماماً قبل تشغيل السكربت لكي ينجح سحب الكوكيز
+// الكوكيز لتجاوز الحجب (احذف السطر المكتوب فيه --cookies-from-browser إذا كنت تشغل الكود على سرفر جيت هاب)
 const BROWSER = "chrome"; 
 
 // إعداد مصادقة يوتيوب API
@@ -20,19 +18,19 @@ const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, "https://d
 oauth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
 const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
 
-// 2. دالة جلب العنوان وتحميل أحدث فيديو باستخدام الكوكيز لتفادي الحجب
+// 1. جلب العنوان وتحميل أحدث فيديو
 function downloadLatestVideo() {
-    console.log("جاري استخراج عنوان أحدث فيديو من قناتك باستخدام كوكيز المتصفح...");
+    console.log("جاري استخراج عنوان أحدث فيديو من قناتك...");
     
     let title = "فيديو جديد";
     try {
-        // استخراج العنوان الأصلي للفيديو مع تمرير الكوكيز
+        // استخراج العنوان
         const titleCmd = `yt-dlp --cookies-from-browser ${BROWSER} --print "%(title)s" --playlist-items 1 "${CHANNEL_URL}"`;
         title = execSync(titleCmd, { encoding: 'utf-8' }).trim();
         console.log(`العنوان الأصلي المكتشف: ${title}`);
         
-        console.log("جاري تحميل الفيديو (باستخدام صلاحيات المتصفح لتجنب الحجب)...");
-        // تحميل الفيديو مع تمرير الكوكيز
+        console.log("جاري تحميل الفيديو الأساسي...");
+        // تحميل الفيديو
         const downloadCmd = `yt-dlp --cookies-from-browser ${BROWSER} -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4" -o "latest_video.mp4" --playlist-items 1 "${CHANNEL_URL}"`;
         execSync(downloadCmd, { stdio: 'inherit' });
         
@@ -43,37 +41,31 @@ function downloadLatestVideo() {
     }
 }
 
-// 3. دالة القص بواسطة FFmpeg (أول 59 ثانية عمودياً)
+// 2. قص أول 59 ثانية عمودياً (ريلز)
 function processVideoToShorts(inputFile) {
-    console.log("جاري تحويل أول دقيقة من الفيديو إلى مقطع ريلز (9:16)...");
-    const outputFile = "short_1.mp4";
+    console.log("جاري قص أول دقيقة وتحويلها لأبعاد الريلز العمودية...");
+    const outputFile = "test_short.mp4";
     
     try {
-        // أمر FFmpeg لقص أول 59 ثانية وعمل زوم للمنتصف ليصبح عمودياً
+        // أمر FFmpeg للقص بجودة سريعة وأبعاد 9:16
         const ffmpegCmd = `ffmpeg -y -ss 0 -i ${inputFile} -t 59 -vf "crop=ih*(9/16):ih,scale=1080:1920" -c:v libx264 -crf 23 -preset fast -c:a aac -b:a 128k ${outputFile}`;
         execSync(ffmpegCmd, { stdio: 'inherit' });
-        console.log(`تم إنشاء مقطع الريلز بنجاح: ${outputFile}`);
+        console.log(`تم تجهيز مقطع الريلز للتجربة: ${outputFile}`);
         return outputFile;
     } catch (error) {
-        console.error("حدث خطأ أثناء قص الفيديو بواسطة FFmpeg:", error.message);
+        console.error("حدث خطأ أثناء قص الفيديو:", error.message);
         return null;
     }
 }
 
-// 4. دالة الرفع والجدولة لليوم التالي الساعة 3 عصراً بتوقيت جرينتش
-async function uploadAndSchedule(filePath, originalTitle) {
-    console.log("جاري رفع مقطع الريلز إلى يوتيوب وجدولته...");
+// 3. الرفع والنشر الفوري (Public)
+async function uploadAndPublishImmediately(filePath, originalTitle) {
+    console.log("جاري رفع الريلز ونشره علناً فوراً على القناة...");
     
-    // ضبط العنوان ليتوافق مع شروط يوتيوب (أقل من 100 حرف مع الهاشتاقات)
+    // ضبط العنوان ليكون متوافقاً مع الهاشتاقات
     const safeTitle = originalTitle.length > 75 
         ? originalTitle.substring(0, 75) + " #shorts #ريلز" 
         : originalTitle + " #shorts #ريلز";
-
-    // حساب وقت النشر (غداً الساعة 3 عصراً بتوقيت جرينتش UTC)
-    const publishDate = new Date();
-    publishDate.setUTCDate(publishDate.getUTCDate() + 1);
-    publishDate.setUTCHours(15, 0, 0, 0);
-    const publishTimeIso = publishDate.toISOString();
 
     try {
         const response = await youtube.videos.insert({
@@ -81,13 +73,12 @@ async function uploadAndSchedule(filePath, originalTitle) {
             requestBody: {
                 snippet: {
                     title: safeTitle,
-                    description: `${originalTitle}\n\n#shorts #ريلز #youtube_shorts #يوتيوب`,
-                    tags: ['shorts', 'ريلز', 'يوتيوب', 'short'],
-                    categoryId: '22' // فئة المدونات والناس
+                    description: `${originalTitle}\n\n#shorts #ريلز #يوتيوب #تجربة`,
+                    tags: ['shorts', 'ريلز', 'يوتيوب'],
+                    categoryId: '22'
                 },
                 status: {
-                    privacyStatus: 'private', // يجب أن يكون خاصاً لتفعيل الجدولة
-                    publishAt: publishTimeIso,
+                    privacyStatus: 'public', // تم التعديل إلى public للنشر الفوري بدون جدولة 🚀
                     selfDeclaredMadeForKids: false
                 }
             },
@@ -97,17 +88,16 @@ async function uploadAndSchedule(filePath, originalTitle) {
         });
         
         console.log(`\n==================================================`);
-        console.log(`✅ تمت العملية بنجاح وجدولة الريلز!`);
-        console.log(`📅 تاريخ النشر المجدول: ${publishTimeIso}`);
-        console.log(`📝 عنوان الفيديو المرفوع: ${safeTitle}`);
-        console.log(`🆔 معرّف الفيديو (Video ID): ${response.data.id}`);
+        console.log(`🔥 تم النشر الفوري بنجاح! اذهب وتحقق من قناتك الآن.`);
+        console.log(`📝 العنوان: ${safeTitle}`);
+        console.log(`🆔 سيعمل الرابط قريباً: https://youtu.be/${response.data.id}`);
         console.log(`==================================================`);
     } catch (error) {
         console.error("حدث خطأ أثناء الرفع إلى API يوتيوب:", error.message);
     }
 }
 
-// الدالة الرئيسية للتنفيذ
+// الدالة الرئيسية
 async function main() {
     const videoData = downloadLatestVideo();
     
@@ -115,21 +105,20 @@ async function main() {
         const shortFile = processVideoToShorts(videoData.file);
         
         if (shortFile && fs.existsSync(shortFile)) {
-            await uploadAndSchedule(shortFile, videoData.title);
+            await uploadAndPublishImmediately(shortFile, videoData.title);
             
-            // تنظيف الملفات المؤقتة بعد الانتهاء لتوفير المساحة
+            // تنظيف الملفات
             try {
                 fs.unlinkSync(videoData.file);
                 fs.unlinkSync(shortFile);
-                console.log("تم تنظيف الملفات المؤقتة من الجهاز.");
+                console.log("تم تنظيف الملفات المؤقتة.");
             } catch (e) {
-                console.log("لم يتم حذف الملفات المؤقتة، يمكنك حذفها يدوياً.");
+                console.log("لم يتم حذف الملفات تلقائياً.");
             }
         }
     } else {
-        console.log("فشل في العثور على الفيديو الأساسي أو تحميله.");
+        console.log("فشل السكربت في البداية.");
     }
 }
 
-// بدء التشغيل
 main();
