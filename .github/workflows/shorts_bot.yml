@@ -28,11 +28,9 @@ jobs:
       - name: Install Node.js Dependencies
         run: npm install googleapis
 
-      - name: Create Cookies File Safely
-        env:
-          COOKIES_RAW: ${{ secrets.YT_COOKIES }}
+      - name: Decode Cookies File Safely (Base64)
         run: |
-          echo "$COOKIES_RAW" > cookies.txt
+          echo "${{ secrets.YT_COOKIES }}" | base64 --decode > cookies.txt
 
       - name: Run Magic Script
         env:
